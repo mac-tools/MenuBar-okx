@@ -19,6 +19,23 @@ struct ColorTheme {
     static let nature = ColorTheme(up: .systemTeal, down: NSColor(red: 0.6, green: 0.4, blue: 0.2, alpha: 1.0))
 }
 
+// 背景样式定义
+enum BackgroundStyle {
+    case none           // 无背景
+    case solid          // 纯色背景
+    case gradient       // 渐变背景
+    case rounded        // 圆角背景
+    case capsule        // 胶囊形背景
+    
+    var cornerRadius: CGFloat {
+        switch self {
+        case .none, .solid, .gradient: return 0
+        case .rounded: return 4
+        case .capsule: return 11
+        }
+    }
+}
+
 enum ThemeType {
     case classic, modern, vibrant, professional, nature
     
@@ -45,7 +62,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     // 股票模拟器
     var stockSimulator = StockSimulator()
     // 当前主题
-    var currentTheme: ThemeType = .modern
+    var currentTheme: ThemeType = .classic
+    // 背景样式
+    var backgroundStyle: BackgroundStyle = .rounded
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         // 1. 创建状态栏项目
@@ -104,6 +123,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         
         image.lockFocus()
         
+        // 绘制背景
+        drawBackground(in: NSRect(x: 0, y: 0, width: totalWidth, height: totalHeight), for: stockData)
+        
         // 获取当前主题颜色
         let themeColors = currentTheme.colors
         let textColor = stockData.isUp ? themeColors.up : themeColors.down
@@ -145,6 +167,45 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         return image
     }
     
+    // 绘制背景的辅助函数
+    func drawBackground(in rect: NSRect, for stockData: StockData) {
+        guard backgroundStyle != .none else { return }
+        
+        let themeColors = currentTheme.colors
+        let backgroundColor = stockData.isUp ? themeColors.up.withAlphaComponent(0.3) : themeColors.down.withAlphaComponent(0.3)
+        
+        switch backgroundStyle {
+        case .none:
+            break
+            
+        case .solid:
+            backgroundColor.setFill()
+            rect.fill()
+            
+        case .gradient:
+            let gradient = NSGradient(starting: backgroundColor, ending: backgroundColor.withAlphaComponent(0.05))
+            gradient?.draw(in: rect, angle: 90)
+            
+        case .rounded, .capsule:
+            let path = NSBezierPath(roundedRect: rect, xRadius: backgroundStyle.cornerRadius, yRadius: backgroundStyle.cornerRadius)
+            backgroundColor.setFill()
+            path.fill()
+            
+            // 添加边框
+            let borderColor = stockData.isUp ? themeColors.up.withAlphaComponent(0.3) : themeColors.down.withAlphaComponent(0.3)
+            borderColor.setStroke()
+            path.lineWidth = 0.5
+            path.stroke()
+        }
+    }
+    
+    // 切换背景样式的方法
+    func switchToBackgroundStyle(_ style: BackgroundStyle) {
+        backgroundStyle = style
+        // 立即更新显示
+        updateStockData()
+    }
+
     // 切换主题的方法
     func switchToTheme(_ theme: ThemeType) {
         currentTheme = theme
