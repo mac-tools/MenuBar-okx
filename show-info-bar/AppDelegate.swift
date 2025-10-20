@@ -84,7 +84,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         self.popover?.contentViewController = NSHostingController(rootView: PopoverView())
         
         // 4. 设置一个计时器，每3秒更新一次股票信息
-        timer = Timer.scheduledTimer(timeInterval: 3.0, target: self, selector: #selector(updateStockData), userInfo: nil, repeats: true)
+        timer = Timer.scheduledTimer(timeInterval: 1.0, target: self, selector: #selector(updateStockData), userInfo: nil, repeats: true)
     }
 
     @objc func updateStockData() {
@@ -108,8 +108,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         
         // 计算三个元素的宽度分配
         let arrowWidth: CGFloat = 10
-        let changeWidth: CGFloat = 30
-        let priceWidth = totalWidth - arrowWidth - changeWidth - (padding * 2) - (elementSpacing * 2)
+        let changeWidth: CGFloat = 35
+        let nameWidth = totalWidth - arrowWidth - changeWidth - (padding * 2) - (elementSpacing * 2)
         
         // 计算垂直居中位置
         let fontSize: CGFloat = 12
@@ -118,8 +118,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         
         // 计算各元素的X位置
         let arrowX = padding
-        let priceX = arrowX + arrowWidth + elementSpacing
-        let changeX = priceX + priceWidth + elementSpacing
+        let nameX = arrowX + arrowWidth + elementSpacing
+        let changeX = nameX + nameWidth + elementSpacing
         
         image.lockFocus()
         
@@ -144,14 +144,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let arrowString = NSAttributedString(string: arrowSymbol, attributes: arrowAttrs)
         arrowString.draw(in: NSRect(x: arrowX, y: yPosition, width: arrowWidth, height: textHeight))
         
-        // 绘制价格
-        let priceAttrs: [NSAttributedString.Key: Any] = [
+        // 绘制币种名称
+        let nameAttrs: [NSAttributedString.Key: Any] = [
             .font: NSFont.systemFont(ofSize: fontSize, weight: .medium),
             .foregroundColor: NSColor.labelColor,
             .paragraphStyle: centerParagraphStyle
         ]
-        let priceString = NSAttributedString(string: stockData.formattedPrice, attributes: priceAttrs)
-        priceString.draw(in: NSRect(x: priceX, y: yPosition, width: priceWidth, height: textHeight))
+        let nameString = NSAttributedString(string: stockData.displayName, attributes: nameAttrs)
+        nameString.draw(in: NSRect(x: nameX, y: yPosition, width: nameWidth, height: textHeight))
         
         // 绘制涨跌幅
         let changeAttrs: [NSAttributedString.Key: Any] = [
