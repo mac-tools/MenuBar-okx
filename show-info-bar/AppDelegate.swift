@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import Foundation
 
 // 颜色主题定义
 struct ColorTheme {
@@ -74,8 +75,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         if let button = statusItem?.button {
             // 初始显示
             button.image = createStockImage(for: stockSimulator.generateRandomStockData())
-            // 设置点击事件
+            // 设置左键点击事件
             button.action = #selector(togglePopover)
+            // 设置右键点击事件
+            button.sendAction(on: [.leftMouseUp, .rightMouseUp])
         }
         
         // 3. 创建 Popover 及其内容
@@ -172,7 +175,22 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         guard backgroundStyle != .none else { return }
         
         let themeColors = currentTheme.colors
-        let backgroundColor = stockData.isUp ? themeColors.up.withAlphaComponent(0.3) : themeColors.down.withAlphaComponent(0.3)
+        
+        // 根据涨跌幅度计算颜色深度
+        let changePercent = abs(stockData.changePercent)
+        
+        // 定义颜色深度范围：0.1 (最浅) 到 0.8 (最深)
+        let minAlpha: CGFloat = 0.1
+        let maxAlpha: CGFloat = 0.8
+        
+        // 根据涨跌幅度计算透明度
+        // 涨跌幅度越大，颜色越深
+        let normalizedPercent = min(changePercent / 10.0, 1.0) // 假设10%为最大值
+        let alpha = minAlpha + (maxAlpha - minAlpha) * normalizedPercent
+        
+        let backgroundColor = stockData.isUp ? 
+            themeColors.up.withAlphaComponent(alpha) : 
+            themeColors.down.withAlphaComponent(alpha)
         
         switch backgroundStyle {
         case .none:
@@ -183,7 +201,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             rect.fill()
             
         case .gradient:
-            let gradient = NSGradient(starting: backgroundColor, ending: backgroundColor.withAlphaComponent(0.05))
+            // 渐变效果：从深色到浅色
+            let lightColor = backgroundColor.withAlphaComponent(alpha * 0.3)
+            let gradient = NSGradient(starting: backgroundColor, ending: lightColor)
             gradient?.draw(in: rect, angle: 90)
             
         case .rounded, .capsule:
@@ -191,8 +211,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             backgroundColor.setFill()
             path.fill()
             
-            // 添加边框
-            let borderColor = stockData.isUp ? themeColors.up.withAlphaComponent(0.3) : themeColors.down.withAlphaComponent(0.3)
+            // 添加边框，边框颜色也根据幅度调整
+            let borderAlpha = min(alpha + 0.2, 1.0) // 边框稍微深一点
+            let borderColor = stockData.isUp ? 
+                themeColors.up.withAlphaComponent(borderAlpha) : 
+                themeColors.down.withAlphaComponent(borderAlpha)
             borderColor.setStroke()
             path.lineWidth = 0.5
             path.stroke()
@@ -215,7 +238,19 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc func togglePopover() {
         guard let button = statusItem?.button else { return }
-
+        
+        // 检查当前事件类型
+        if let event = NSApp.currentEvent {
+            if event.type == .rightMouseUp {
+                // 右键点击：切换到下一个数据
+                stockSimulator.switchToNext()
+                // 立即更新显示
+                button.image = createStockImage(for: stockSimulator.generateRandomStockData())
+                return
+            }
+        }
+        
+        // 左键点击：显示/隐藏弹窗
         if let popover = self.popover {
             if popover.isShown {
                 // 如果已显示，则关闭
